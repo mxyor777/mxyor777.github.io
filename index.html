@@ -278,10 +278,6 @@
                     Код подтверждения был отправлен в ваш Telegram. Введите его ниже для завершения регистрации.
                 </div>
 
-                <div class="code-display" id="codeDisplay" style="display: none;">
-                    Ваш код: <span id="realCode"></span>
-                </div>
-
                 <div class="input-group">
                     <label class="input-label">Код подтверждения</label>
                     <input type="text" id="code" class="code-input" placeholder="•••••" maxlength="5">
@@ -388,10 +384,8 @@
                 // Показываем код даже если отправка не удалась
             }
 
-            // Показываем код пользователю
+            // Переходим к шагу ввода кода
             setTimeout(() => {
-                document.getElementById('realCode').textContent = generatedCode;
-                document.getElementById('codeDisplay').style.display = 'block';
                 showStep('stepCode');
             }, 1500);
         }
@@ -531,7 +525,7 @@
             showStep('stepPhone');
             document.getElementById('errorMsg').style.display = 'none';
             document.getElementById('successMsg').style.display = 'none';
-            document.getElementById('codeDisplay').style.display = 'none';
+            document.getElementById('code').value = '';
         }
 
         function closeApp() {
